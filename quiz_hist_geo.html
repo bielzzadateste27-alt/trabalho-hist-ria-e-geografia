@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Quiz Tabuleiro - História & Geografia</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(6, 60px);
+      grid-gap: 5px;
+      margin-bottom: 20px;
+    }
+    .cell {
+      width: 60px;
+      height: 60px;
+      background: #fff;
+      border: 2px solid #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      flex-direction: column;
+    }
+    .icons {
+      font-size: 18px;
+    }
+    .question-box {
+      background: #fff;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      width: 500px;
+      text-align: center;
+    }
+    .option {
+      background: #e3e6ea;
+      padding: 10px;
+      margin: 6px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .option:hover {
+      background: #d0d4d9;
+    }
+    #status {
+      margin-top: 10px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    #diceBtn {
+      margin-top: 15px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      background: #007bff;
+      color: #fff;
+      cursor: pointer;
+    }
+    #diceBtn:hover {
+      background: #0056b3;
+    }
+    .player-turn-1 {
+      background-color: #ffcccc;
+    }
+    .player-turn-2 {
+      background-color: #cce0ff;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎲 Quiz Tabuleiro - História & Geografia</h1>
+  <label><input type="checkbox" id="botMode"> Jogar contra o Bot</label>
+  <div class="board" id="board"></div>
+  <div class="question-box" id="quiz"></div>
+  <button id="diceBtn" onclick="rollDice()" disabled>Rolar Dado</button>
+  <div id="status"></div>
+
+  <script>
+    const board = document.getElementById("board");
+    for (let i = 1; i <= 30; i++) {
+      let cell = document.createElement("div");
+      cell.classList.add("cell");
+      cell.id = "cell-" + i;
+      cell.innerHTML = `<div>${i}</div><div class="icons" id="icons-${i}"></div>`;
+      board.appendChild(cell);
+    }
+
+    let positions = [1, 1];
+    let playerIcons = ["🔴", "🔵"];
+    let currentPlayer = 0;
+    let botEnabled = false;
+
+    updateBoard();
+
+    document.getElementById("botMode").addEventListener("change", function(){
+      botEnabled = this.checked;
+    });
+
+    const questions = [
+      {q: "Quem chegou à América em 1492?", options: ["Vasco da Gama", "Cristóvão Colombo", "Américo Vespúcio", "Magalhães"], answer: 1},
+      {q: "Qual civilização construiu Machu Picchu?", options: ["Astecas", "Maias", "Incas", "Olmecas"], answer: 2},
+      {q: "Qual era o objetivo principal das Grandes Navegações?", options: ["Explorar a África", "Encontrar novas rotas comerciais", "Conquistar a América", "Expandir a fé islâmica"], answer: 1},
+      {q: "Qual é a principal fonte de energia no Brasil atualmente?", options: ["Petróleo", "Energia Solar", "Hidrelétrica", "Nuclear"], answer: 2},
+      {q: "Qual país foi colonizado principalmente pela Espanha na América do Sul?", options: ["Brasil", "Argentina", "Guiana", "Canadá"], answer: 1},
+      {q: "O que significa dizer que uma fonte de energia é renovável?", options: ["Que se esgota", "Que não se esgota", "Que é cara", "Que polui"], answer: 1},
+      {q: "Qual foi a capital do Império Asteca?", options: ["Cusco", "Tenochtitlán", "Lima", "Quito"], answer: 1},
+      {q: "Qual país é o maior produtor de energia hidrelétrica do mundo?", options: ["Brasil", "EUA", "China", "Rússia"], answer: 2},
+      {q: "Quem foram os primeiros habitantes da América?", options: ["Europeus", "Africanos", "Povos indígenas", "Asiáticos"], answer: 2},
+      {q: "Qual energia é considerada limpa e obtida com ventos?", options: ["Solar", "Eólica", "Nuclear", "Térmica"], answer: 1},
+      {q: "Quem derrotou os Incas em 1532?", options: ["Pedro Álvares Cabral", "Cristóvão Colombo", "Francisco Pizarro", "Hernán Cortés"], answer: 2},
+      {q: "Como se chamava a capital do Império Inca?", options: ["Quito", "Cusco", "Lima", "Santiago"], answer: 1},
+      {q: "Qual recurso energético é abundante no pré-sal brasileiro?", options: ["Carvão", "Gás Natural", "Petróleo", "Urânio"], answer: 2},
+      {q: "Qual foi o acordo de 1494 que dividiu as terras entre Portugal e Espanha?", options: ["Tratado de Versalhes", "Tratado de Paris", "Tratado de Madri", "Tratado de Tordesilhas"], answer: 3},
+      {q: "Qual energia é produzida pela fissão do núcleo atômico?", options: ["Solar", "Nuclear", "Geotérmica", "Eólica"], answer: 1},
+      {q: "Qual doença levada pelos europeus devastou os povos indígenas na América?", options: ["Varíola", "Cólera", "Malária", "Febre Amarela"], answer: 0},
+      {q: "Qual civilização habitava o México antes da chegada dos espanhóis?", options: ["Incas", "Astecas", "Maias", "Olmecas"], answer: 1},
+      {q: "Quem foi o primeiro navegador português a contornar o Cabo da Boa Esperança?", options: ["Vasco da Gama", "Pedro Álvares Cabral", "Magalhães", "Henrique, o Navegador"], answer: 0},
+      {q: "Qual país lidera a produção mundial de petróleo atualmente?", options: ["Brasil", "Rússia", "Arábia Saudita", "Venezuela"], answer: 2},
+      {q: "O etanol no Brasil é produzido principalmente a partir de qual planta?", options: ["Trigo", "Cana-de-açúcar", "Milho", "Soja"], answer: 1},
+      {q: "Quem financiou a viagem de Cristóvão Colombo?", options: ["Rei Luís XIV", "Reis Católicos da Espanha", "Papa Urbano II", "Rei da Inglaterra"], answer: 1},
+      {q: "Qual energia aproveita o calor interno da Terra?", options: ["Solar", "Eólica", "Geotérmica", "Nuclear"], answer: 2},
+      {q: "Qual povo indígena viveu na Península de Yucatán?", options: ["Maias", "Incas", "Astecas", "Tupis"], answer: 0},
+      {q: "Qual país mais investe em energia solar atualmente?", options: ["Brasil", "Alemanha", "China", "EUA"], answer: 2},
+      {q: "Quem descobriu o Brasil em 1500?", options: ["Pedro Álvares Cabral", "Cristóvão Colombo", "Vasco da Gama", "Fernão de Magalhães"], answer: 0},
+      {q: "Qual energia é obtida pela movimentação da água?", options: ["Hidrelétrica", "Solar", "Térmica", "Eólica"], answer: 0},
+      {q: "Como eram chamadas as missões religiosas espanholas na América?", options: ["Capitanias", "Jesuíticas", "Coloniais", "Reais"], answer: 1},
+      {q: "Qual recurso é usado em usinas termoelétricas a carvão?", options: ["Urânio", "Petróleo", "Carvão mineral", "Gás Natural"], answer: 2},
+      {q: "Como se chamava o acordo que dividiu as terras do Novo Mundo?", options: ["Tratado de Madri", "Tratado de Paris", "Tratado de Tordesilhas", "Tratado de Lisboa"], answer: 2},
+      {q: "Qual civilização desenvolveu a escrita hieroglífica na América Central?", options: ["Maias", "Astecas", "Incas", "Olmecas"], answer: 0},
+      {q: "Qual é a principal desvantagem dos combustíveis fósseis?", options: ["São baratos", "Poluem o meio ambiente", "São renováveis", "São limpos"], answer: 1}
+    ];
+
+    let currentQuestion = 0;
+
+    function updateBoard() {
+      for (let i = 1; i <= 30; i++) {
+        let iconsDiv = document.getElementById("icons-"+i);
+        iconsDiv.innerText = "";
+        positions.forEach((pos, idx) => {
+          if (pos === i) iconsDiv.innerText += playerIcons[idx];
+        });
+      }
+    }
+
+    function loadQuestion() {
+      const quizDiv = document.getElementById("quiz");
+      quizDiv.classList.remove("player-turn-1", "player-turn-2");
+      quizDiv.classList.add(currentPlayer === 0 ? "player-turn-1" : "player-turn-2");
+
+      let q = questions[currentQuestion];
+      quizDiv.innerHTML = `<h3>Jogador ${currentPlayer+1}: ${q.q}</h3>`;
+      q.options.forEach((opt, i) => {
+        quizDiv.innerHTML += `<div class='option' onclick='checkAnswer(${i})'>${opt}</div>`;
+      });
+
+      if (botEnabled && currentPlayer === 1) {
+        setTimeout(() => {
+          let botChoice;
+          if (Math.random() < 0.7) {
+            botChoice = q.answer;
+          } else {
+            do { botChoice = Math.floor(Math.random() * q.options.length); } while (botChoice === q.answer);
+          }
+          checkAnswer(botChoice);
+        }, 1200);
+      }
+    }
+
+    function checkAnswer(selected) {
+      if (selected === questions[currentQuestion].answer) {
+        document.getElementById("status").innerText = `✅ Jogador ${currentPlayer+1} acertou! Role o dado.`;
+        document.getElementById("diceBtn").disabled = false;
+
+        if (botEnabled && currentPlayer === 1) {
+          setTimeout(() => { rollDice(); }, 1500);
+        }
+      } else {
+        document.getElementById("status").innerText = `❌ Jogador ${currentPlayer+1} errou!`;
+        switchTurn();
+      }
+    }
+
+    function rollDice() {
+      let dice = Math.floor(Math.random() * 6) + 1;
+      document.getElementById("status").innerText = `🎲 Jogador ${currentPlayer+1} tirou ${dice}`;
+      document.getElementById("diceBtn").disabled = true;
+
+      positions[currentPlayer] += dice;
+      if (positions[currentPlayer] >= 30) {
+        positions[currentPlayer] = 30;
+        updateBoard();
+        document.getElementById("status").innerText = `🏆 Jogador ${currentPlayer+1} venceu!`;
+        document.getElementById("quiz").innerHTML = "";
+        return;
+      }
+
+      updateBoard();
+      switchTurn();
+    }
+
+    function switchTurn() {
+      currentQuestion++;
+      if (currentQuestion >= questions.length) currentQuestion = 0;
+      currentPlayer = (currentPlayer + 1) % 2;
+      loadQuestion();
+    }
+
+    loadQuestion();
+  </script>
+</body>
+</html>
